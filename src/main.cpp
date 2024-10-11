@@ -6,20 +6,23 @@
 #include "gameFunctions.h"
 #include <EnableInterrupt.h>
 
+
 long randomValue;
 unsigned int score = 0;
 unsigned long start = millis();
-unsigned long intervallo = 7000;
+unsigned long timeRound = 7000;
 boolean alreadyPressed = false;
 boolean isOn = true;
 enum State {
   INITIATION,
-  GAMING
+  GAMING,
+  SET_DIFFICULT
 };
 
 State currentState = INITIATION;
 LiquidCrystal_I2C lcd(0x27, 20, 2);
 
+//when system wakes up, it start to time, if after 10 seconds no button was pressed it restart to sleep.
 void wakeUp() {
   start = millis();
 }
@@ -35,8 +38,9 @@ void setup() {
   pinMode(BUTTON_PIN3, INPUT);
   pinMode(LED_PIN4, OUTPUT);      
   pinMode(BUTTON_PIN4, INPUT);
+  pinMode(POTENTIOMETER_PIN, INPUT);
 
-  lcd.init();                      // initialize the lcd 
+  lcd.init();
   lcd.backlight();
   randomSeed(analogRead(0));
   randomValue = random(0, 16);
@@ -51,25 +55,21 @@ void loop() {
     case GAMING:
       gamingState();
       break;
+    case SET_DIFFICULT:
+      chooseDifficulty();
   }
 
 }
 
 void initiationState() {
   welcomeState();
+  lcd.setCursor(0, 1);
+  lcd.print("Press B1 to start");
   digitalWrite(RED_PIN, HIGH);
-  buttonLed(LED_PIN1, BUTTON_PIN1);
-  if (digitalRead(LED_PIN1) == HIGH) {
+  if (digitalRead(BUTTON_PIN1) == HIGH) {
     digitalWrite(RED_PIN, LOW);
-    currentState = GAMING;
+    currentState = SET_DIFFICULT;
     lcd.clear();
-    lcd.print("Go");
-    score = 0;
-    delay(500);
-    lcd.clear();
-    lcd.print(randomValue);
-    start = millis();
-    roundState();
   }
 }
 
@@ -98,24 +98,45 @@ void sleepState() {
   enableInterrupt(BUTTON_PIN3, wakeUp, CHANGE);
   enableInterrupt(BUTTON_PIN4, wakeUp, CHANGE);
   lcd.noBacklight();
+  digitalWrite(RED_PIN, LOW);
   set_sleep_mode(SLEEP_MODE_PWR_DOWN);
   sleep_enable();
   sleep_mode();
   sleep_disable();
   disableInterrupt(BUTTON_PIN1);
-  disableInterrupt(BUTTON_PIN1);
-  disableInterrupt(BUTTON_PIN1);
-  disableInterrupt(BUTTON_PIN1);
+  disableInterrupt(BUTTON_PIN2);
+  disableInterrupt(BUTTON_PIN3);
+  disableInterrupt(BUTTON_PIN4);
   lcd.backlight();
 }
 
 void chooseDifficulty() {
-
+  int levelDifficulty = (int) (analogRead(POTENTIOMETER_PIN) / 255) ;
+  if (levelDifficulty == 0) {
+    levelDifficulty = 1;
+  }
+  timeRound = (unsigned long) (TIME_ROUND_DEFAULT / levelDifficulty);
+  lcd.setCursor(0, 0);
+  lcd.print("difficulty: ");
+  lcd.print(levelDifficulty);
+  lcd.setCursor(0, 1);
+  lcd.print("press B4 to start");
+  if (digitalRead(BUTTON_PIN4) == HIGH) {
+    currentState = GAMING;
+    lcd.clear();
+    lcd.print("Go");
+    score = 0;
+    delay(500);
+    lcd.clear();
+    lcd.print(randomValue);
+    start = millis();
+    roundState();
+  }
 }
 
 void welcomeState() {
   lcd.setCursor(0,0);
-  lcd.print("WELCOME TO GMD");
+  lcd.print("WELCOME TO GMB");
   if (millis() - start >= 10000) {
     sleepState();
   }
@@ -131,12 +152,12 @@ void welcomeState() {
     lcd.setCursor(0, 1);
     lcd.print("Score: ");
     lcd.print(score);
-    delay(SHOW_TIME);
+    delay(SHOW_TIME); 
 }
 
 void gamingState() {
   roundState();
-  if (millis() - start >= intervallo) {
+  if (millis() - start >= timeRound) {
     showResultState();
     currentState = INITIATION;
   }
@@ -154,5 +175,5 @@ int getPlayerValue() {
 }
 
 void increaseDifficult() {
-  intervallo-=500;
+  timeRound-=500;
 }
