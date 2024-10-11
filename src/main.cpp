@@ -4,12 +4,14 @@
 #include <avr/sleep.h>
 #include "gameState.h"
 #include "gameFunctions.h"
+#include <EnableInterrupt.h>
 
 long randomValue;
 unsigned int score = 0;
 unsigned long start = millis();
 unsigned long intervallo = 7000;
 boolean alreadyPressed = false;
+boolean isOn = true;
 enum State {
   INITIATION,
   GAMING
@@ -19,10 +21,7 @@ State currentState = INITIATION;
 LiquidCrystal_I2C lcd(0x27, 20, 2);
 
 void wakeUp() {
-  buttonLed(LED_PIN1, BUTTON_PIN1);
-  buttonLed(LED_PIN2, BUTTON_PIN2);
-  buttonLed(LED_PIN3, BUTTON_PIN3);
-  buttonLed(LED_PIN4, BUTTON_PIN4);
+  start = millis();
 }
 
 void setup() {
@@ -41,9 +40,6 @@ void setup() {
   lcd.backlight();
   randomSeed(analogRead(0));
   randomValue = random(0, 16);
-  Timer1.initialize(ON_MICRO_TIME);
-  Timer1.attachInterrupt(sleepState);
-  attachInterrupt(digitalPinToInterrupt(2), wakeUp, RISING); 
 }
 
 void loop() {
@@ -97,10 +93,20 @@ void roundState() {
 }
 
 void sleepState() {
+  enableInterrupt(BUTTON_PIN1, wakeUp, CHANGE);
+  enableInterrupt(BUTTON_PIN2, wakeUp, CHANGE);
+  enableInterrupt(BUTTON_PIN3, wakeUp, CHANGE);
+  enableInterrupt(BUTTON_PIN4, wakeUp, CHANGE);
+  lcd.noBacklight();
   set_sleep_mode(SLEEP_MODE_PWR_DOWN);
   sleep_enable();
   sleep_mode();
-  sleep_disable();  
+  sleep_disable();
+  disableInterrupt(BUTTON_PIN1);
+  disableInterrupt(BUTTON_PIN1);
+  disableInterrupt(BUTTON_PIN1);
+  disableInterrupt(BUTTON_PIN1);
+  lcd.backlight();
 }
 
 void chooseDifficulty() {
@@ -110,6 +116,9 @@ void chooseDifficulty() {
 void welcomeState() {
   lcd.setCursor(0,0);
   lcd.print("WELCOME TO GMD");
+  if (millis() - start >= 10000) {
+    sleepState();
+  }
 }
 
  void showResultState() {

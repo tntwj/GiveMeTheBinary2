@@ -11,7 +11,7 @@
 
 #define SHOW_TIME 10000
 #define WAIT_TIME 1000
-#define ON_MICRO_TIME 100000
+#define ON_MICRO_TIME 10000000
 
 void initiationState();
 
