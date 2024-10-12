@@ -142,7 +142,15 @@ void welcomeState() {
   }
 }
 
- void showResultState() {
+  void turnOffLeds() {
+    digitalWrite(LED_PIN1, LOW);
+    digitalWrite(LED_PIN2, LOW);
+    digitalWrite(LED_PIN3, LOW);
+    digitalWrite(LED_PIN4, LOW);
+  }
+
+  void showResultState() {
+    turnOffLeds();
     digitalWrite(RED_PIN, HIGH);
     delay(WAIT_TIME);
     digitalWrite(RED_PIN, LOW);
@@ -159,6 +167,7 @@ void gamingState() {
   roundState();
   if (millis() - start >= timeRound) {
     showResultState();
+    start = millis();
     currentState = INITIATION;
   }
 }
